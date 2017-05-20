@@ -13,6 +13,9 @@ fi
 
 mpicxx main.cpp Packet.cpp -o main.out -std=c++14 -lpthread
 
-mpiexec -n $nr_of_processes ./main.out
+if [ $? = 0 ]
+then
+	
+	mpiexec -n $nr_of_processes ./main.out
 
-rm ./main.out
+fi
