@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+
+if [ $# = 0 ]
+then
+	nr_of_processes=4
+elif [ $# = 1 ]
+then
+	nr_of_processes=$1
+else
+	echo Usage: ./start [nr_of_processes=4]
+	exit 1
+fi
+
+mpicxx main.cpp -o main -std=c++14
+
+mpiexec -n $nr_of_processes ./main
