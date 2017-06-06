@@ -19,8 +19,6 @@ void receive(Process* process, int p, int s){
 		MPI_Recv(&timestampRecv, 1, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
 		//cout<<process->getRank()<<":Odebrano od "<<status.MPI_SOURCE<<" tag "<< status.MPI_TAG<<" my ts: "<<process->getTimestamp()<<" ts " <<timestampRecv<<endl;
 		
-		
-		
 		switch(status.MPI_TAG){
 			case REQUEST_P:
 				process->handleRequestP(timestampRecv, status.MPI_SOURCE);
