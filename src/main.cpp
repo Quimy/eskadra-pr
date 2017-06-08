@@ -3,6 +3,7 @@
 #include <thread> //threads
 #include <iostream> //output
 #include <unistd.h> //sleep
+#include <stdlib.h>
 
 #include "../include/Process.h"
 #include "../include/constants.h"
@@ -17,7 +18,6 @@ void receive(Process* process, int p, int s){
 	while(true){
 
 		MPI_Recv(&timestampRecv, 1, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-		//cout<<process->getRank()<<":Odebrano od "<<status.MPI_SOURCE<<" tag "<< status.MPI_TAG<<" my ts: "<<process->getTimestamp()<<" ts " <<timestampRecv<<endl;
 		
 		switch(status.MPI_TAG){
 			case REQUEST_P:
@@ -32,8 +32,8 @@ void receive(Process* process, int p, int s){
 			case TAKEN_P:
 				process->handleAllowP(timestampRecv, status.MPI_SOURCE, TAKEN_P, p);
 				break;
-			case RELEASED_P:
-				process->handleReleaseP(status.MPI_SOURCE, p);
+			case RELEASED_BOTH:
+				process->handleReleaseBoth(status.MPI_SOURCE, p, s);
 				break;
 			case ALLOW_S:
 				process->handleAllowS(timestampRecv, status.MPI_SOURCE, ALLOW_S, s);
@@ -64,21 +64,19 @@ void prepareLanding(Process* process, int n, int p, int s){
 	
 	process->setState_P(WANTED_P);
 	sendToAll(process, n, REQUEST_P);
-	while(process->getState_P() != HELD_P){
+	process->waitForP();
+	cout<<process->getRank()<<":Uzyskano P"<<endl;
 
-	}
 	process->setState_S(WANTED_S);
 	sendToAll(process, n, REQUEST_S);
-	while(process->getState_S() != HELD_S){
-
-	}
-
-}
-void land(){
-
-	sleep(10);
+	process->waitForS();
+	cout<<process->getRank()<<":Uzyskano S"<<endl;
 
 }
+void criticalSection(){
+	sleep(rand() % 5 + 10);
+}
+
 
 void releaseLandingSpot(Process* process){
 
@@ -87,46 +85,29 @@ void releaseLandingSpot(Process* process){
 	process->sendToAllInQueueS(RELEASED_S);
 
 }
-void stop(){
 
-	sleep(10);
-
-}
 
 void prepareStarting(Process* process,int n, int s){
 
 	process->setState_S(WANTED_S);
 	sendToAll(process, n, REQUEST_S);
-	while(process->getState_S() != HELD_S){
-
-	}
-
-}
-
-void start(){
-
-	sleep(10);
+	process->waitForS();
+	cout<<process->getRank()<<":Uzyskano S"<<endl;
 
 }
+
 
 void releaseBoth(Process* process){
 
 	process->setState_P(NOT_INTERESTED);
 
-	process->sendToAllInQueueP(RELEASED_P);
-
-
 	process->setState_S(NOT_INTERESTED);
 
-	process->sendToAllInQueueS(RELEASED_S);
+	process->sendToAllInQueueBoth(RELEASED_BOTH);
 
 
 }
-void fly(){
 
-	sleep(10);
-
-}
 int main( int argc, char **argv )
 {
 	if(argc != 4){
@@ -152,19 +133,19 @@ int main( int argc, char **argv )
 
 			prepareLanding(&process,n,p,s);
 
-			land();
+			criticalSection();
 
 			releaseLandingSpot(&process);
 
-			stop();
+			criticalSection();
 
 			prepareStarting(&process,n, s);
 
-			start();
+			criticalSection();
 
 			releaseBoth(&process);
 
-			fly();
+			criticalSection();
 
 		}
 	MPI_Finalize();

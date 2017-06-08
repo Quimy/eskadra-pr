@@ -5,6 +5,7 @@
 #include "constants.h"
 #include "ThreadSafeVector.h"
 #include "Responses.h"
+#include <condition_variable>
 
 using namespace std;
 /**
@@ -12,6 +13,8 @@ using namespace std;
  */
 class Process{
 
+	mutex m;
+	condition_variable cv;
 	//status procesu do zasobu P
 	int state_P;
 	//status procesu do zasobu S
@@ -35,7 +38,7 @@ class Process{
 	 * mniejszy
 	 */
 	bool compareTimestamps(int ts_j,int j);
-
+	
 public:
 	Process(int r, int n): rank{r}, numberOfProcesses{n}, state_S{NOT_INTERESTED}, state_P{NOT_INTERESTED}, timestamp{0}, waitReqP{}, waitReqS{}, responses(n){};
 
@@ -50,10 +53,13 @@ public:
 
 	void timestampIncrement();
 
+	void waitForP();
+	void waitForS();
+
 	/**
 	 * wysyłanie do wszystkich procesów, które mam w kolejce P\S wiadomość o tagu tag
 	 */
-	void sendToAllInQueueP(int tag);
+	void sendToAllInQueueBoth(int tag);
 	void sendToAllInQueueS(int tag);
 
 	/**
@@ -84,6 +90,6 @@ public:
 	 *obsługuje komunikaty Release_*
 	 *
 	 */
-	void handleReleaseP(int from,int p);
+	void handleReleaseBoth(int from,int p, int s);
 	void handleReleaseS(int from, int s);
 };
